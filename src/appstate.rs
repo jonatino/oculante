@@ -6,6 +6,7 @@ use crate::{
 };
 use image::RgbaImage;
 use nalgebra::Vector2;
+use notan::prelude::Pipeline;
 use notan::{egui::epaint::ahash::HashMap, prelude::Texture, AppState};
 use std::{
     path::PathBuf,
@@ -24,6 +25,7 @@ pub struct ImageGeometry {
 #[derive(Debug, AppState)]
 pub struct OculanteState {
     pub image_geometry: ImageGeometry,
+    pub srgb_pipeline: Option<Pipeline>,
     pub compare_list: HashMap<PathBuf, ImageGeometry>,
     pub drag_enabled: bool,
     pub reset_image: bool,
@@ -80,6 +82,7 @@ impl Default for OculanteState {
                 scale: 1.0,
                 offset: Default::default(),
             },
+            srgb_pipeline: None,
             compare_list: Default::default(),
             drag_enabled: Default::default(),
             reset_image: Default::default(),

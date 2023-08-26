@@ -39,9 +39,11 @@ mod update;
 use ui::*;
 
 use crate::image_editing::EditState;
+use crate::srgb_pipeline::create_srgb_pipeline;
 
 mod image_editing;
 pub mod paint;
+mod srgb_pipeline;
 
 pub const FONT: &[u8; 309828] = include_bytes!("../res/fonts/Inter-Regular.ttf");
 
@@ -171,8 +173,16 @@ fn init(gfx: &mut Graphics, plugins: &mut Plugins) -> OculanteState {
 
     let maybe_img_location = matches.value_of("INPUT").map(PathBuf::from);
 
+    let srgb_pipeline = match create_srgb_pipeline(gfx) {
+        Ok(pip) => Some(pip),
+        Err(err) => {
+            log::warn!("SRGB Pipeline cannot be created, this may cause visual differences between source and displayed image");
+            None
+        }
+    };
     let mut state = OculanteState {
         texture_channel: mpsc::channel(),
+        srgb_pipeline,
         // current_path: maybe_img_location.cloned(/),
         ..Default::default()
     };
@@ -650,6 +660,10 @@ fn update(app: &mut App, state: &mut OculanteState) {
 fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut OculanteState) {
     let mut draw = gfx.create_draw();
 
+    if let Some(pip) = &state.srgb_pipeline {
+        draw.image_pipeline().pipeline(pip);
+    }
+
     // check if a new texture has been sent
     if let Ok(frame) = state.texture_channel.1.try_recv() {
         let img = frame.buffer;
@@ -823,7 +837,7 @@ fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut O
         }
         if state.tiling < 2 {
             draw.image(texture)
-                .blend_mode(BlendMode::NORMAL)
+                // .blend_mode(BlendMode::NORMAL)
                 .translate(state.image_geometry.offset.x, state.image_geometry.offset.y)
                 .scale(state.image_geometry.scale, state.image_geometry.scale);
         } else {
@@ -860,7 +874,7 @@ fn drawe(app: &mut App, gfx: &mut Graphics, plugins: &mut Plugins, state: &mut O
 
             if show_minimap {
                 draw.image(texture)
-                    .blend_mode(BlendMode::NORMAL)
+                    // .blend_mode(BlendMode::NORMAL)
                     .translate(offset_x, 100.)
                     .scale(scale, scale);
             }
